@@ -447,6 +447,8 @@ void sserial_do(){
              HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  (outpins>>7 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  (outpins>>8 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, (outpins>>9 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, (outpins>>10 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, (outpins>>11 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
              MEMU8(pd_table.input_pins.ptr->data_addr) =
                 HAL_GPIO_ReadPin(IN1_GPIO_Port,  IN1_Pin)<<0 |
