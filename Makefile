@@ -37,6 +37,7 @@ SOURCES += Drivers/STM32F1xx_HAL_Driver/Src//stm32f1xx_hal_rcc_ex.c
 # SOURCES += Drivers/STM32F1xx_HAL_Driver/Src//stm32f1xx_hal_tim.c
 # SOURCES += Drivers/STM32F1xx_HAL_Driver/Src//stm32f1xx_hal_tim_ex.c
 SOURCES += Drivers/STM32F1xx_HAL_Driver/Src//stm32f1xx_hal_uart.c
+SOURCES += Drivers/STM32F1xx_HAL_Driver/Src//stm32f1xx_hal_spi.c
 
 INCDIRS += Drivers/CMSIS/Device/ST/STM32F1xx/Include
 INCDIRS += Drivers/CMSIS/Include
