@@ -4,11 +4,20 @@
 #include "sserial.h"
 
 SPI_HandleTypeDef hspi2;
+TIM_HandleTypeDef htim1;
 
 void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI2_Init(void);
+
+
+void TIM1_UP_IRQHandler(){
+  __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
+  // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
+  sserial_do();
+  // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
+}
 
 int main(void)
 {
@@ -25,49 +34,36 @@ int main(void)
 
   sserial_init();
 
+  // GPIO_InitTypeDef GPIO_InitStruct;
+  // GPIO_InitStruct.Pin = GPIO_PIN_12;
+  // GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  // GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  // HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  __HAL_RCC_TIM1_CLK_ENABLE();
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 3600;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  HAL_TIM_Base_Init(&htim1);
+
+  // TIM_ClockConfigTypeDef sClockSourceConfig;
+  // sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  // HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig);
+  //
+  // TIM_MasterConfigTypeDef sMasterConfig;
+  // sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  // sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  // HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig);
+
+  HAL_NVIC_SetPriority(TIM1_UP_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
+  HAL_TIM_Base_Start_IT(&htim1);
+
   /* Infinite loop */
-  while (1)
-  {
-     sserial_do();
-  /* USER CODE END WHILE */
-
-  /* USER CODE BEGIN 3 */
-     // HAL_GPIO_WritePin(REL1_GPIO_Port,REL1_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL2_GPIO_Port,REL2_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL3_GPIO_Port,REL3_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL4_GPIO_Port,REL4_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL5_GPIO_Port,REL5_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL6_GPIO_Port,REL6_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL7_GPIO_Port,REL7_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL8_GPIO_Port,REL8_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL9_GPIO_Port,REL9_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL10_GPIO_Port,REL10_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL11_GPIO_Port,REL11_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(REL12_GPIO_Port,REL12_Pin,GPIO_PIN_SET);
-     //
-     // HAL_GPIO_WritePin(RED_GPIO_Port,RED_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(YELLOW_GPIO_Port,YELLOW_Pin,GPIO_PIN_RESET);
-     //
-     // HAL_Delay(100);
-     // HAL_GPIO_WritePin(REL1_GPIO_Port,REL1_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL2_GPIO_Port,REL2_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL3_GPIO_Port,REL3_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL4_GPIO_Port,REL4_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL5_GPIO_Port,REL5_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL6_GPIO_Port,REL6_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL7_GPIO_Port,REL7_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL8_GPIO_Port,REL8_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL9_GPIO_Port,REL9_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL10_GPIO_Port,REL10_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL11_GPIO_Port,REL11_Pin,GPIO_PIN_RESET);
-     // HAL_GPIO_WritePin(REL12_GPIO_Port,REL12_Pin,GPIO_PIN_RESET);
-     //
-     // HAL_GPIO_WritePin(RED_GPIO_Port,RED_Pin,GPIO_PIN_SET);
-     // HAL_GPIO_WritePin(YELLOW_GPIO_Port,YELLOW_Pin,GPIO_PIN_SET);
-     // HAL_Delay(100);
-
-  }
-  /* USER CODE END 3 */
+  while (1);
 
 }
 
@@ -231,10 +227,6 @@ static void MX_GPIO_Init(void)
 
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @param  None
@@ -269,13 +261,3 @@ void assert_failed(uint8_t* file, uint32_t line)
 }
 
 #endif
-
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-*/ 
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

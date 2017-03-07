@@ -521,6 +521,19 @@ void sserial_do(){
    timeout++;
    if(timeout > 100.0){//TODO: clamping
       HAL_GPIO_WritePin(YELLOW_GPIO_Port,YELLOW_Pin,GPIO_PIN_SET);
+      
+      HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL3_GPIO_Port,  REL3_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL4_GPIO_Port,  REL4_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL5_GPIO_Port,  REL5_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL6_GPIO_Port,  REL6_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL7_GPIO_Port,  REL7_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, GPIO_PIN_RESET);
       //PIN(connected) = 0;
       rxpos = bufferpos;
    }else{
