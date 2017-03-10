@@ -11,7 +11,7 @@ void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI2_Init(void);
 
-
+//20kHz
 void TIM1_UP_IRQHandler(){
   __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
   // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
@@ -44,7 +44,7 @@ int main(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 3600;
+  htim1.Init.Period = 3600; // 72e6 / 3600 = 20kHz
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   HAL_TIM_Base_Init(&htim1);
