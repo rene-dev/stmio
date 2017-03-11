@@ -17,6 +17,7 @@ INCDIRS += Inc
 
 SOURCES += Src/main.c
 SOURCES += Src/sserial.c
+SOURCES += Src/keymatrix.c
 SOURCES += Src/crc8.c
 SOURCES += Src/stm32f1xx_hal_msp.c
 SOURCES += Src/stm32f1xx_it.c
