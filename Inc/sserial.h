@@ -94,6 +94,11 @@ typedef union{
 
 //#define BOOLPIN(pin) (uint8_t)(PIN(pin) > 0.0)
 
+typedef union {
+  uint8_t byte[4];
+  uint32_t unit;
+} unit_no_t;
+
 typedef struct{
    uint8_t record_type;//0xa0
    uint8_t data_size;

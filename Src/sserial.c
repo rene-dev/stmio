@@ -29,6 +29,7 @@ volatile uint8_t rxbuf[128];
 volatile uint8_t txbuf[20];
 uint16_t address;//current address pointer
 int rxpos;
+unit_no_t unit;
 memory_t memory;
 uint8_t *heap_ptr;
 uint32_t timeout;
@@ -112,6 +113,9 @@ void init_hardware() {
    DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_CIRC;
    DMA1->IFCR = DMA_IFCR_CTCIF5 | DMA_IFCR_CHTIF5 | DMA_IFCR_CGIF5;
    DMA1_Channel5->CCR |= DMA_CCR_EN;
+   
+   //generate unit number from 96bit unique chip ID
+   unit.unit = ((uint32_t *)UID_BASE)[0] ^ ((uint32_t *)UID_BASE)[1] ^ ((uint32_t *)UID_BASE)[2];
 }
 
 uint16_t add_pd(char *name_string, char *unit_string, uint8_t data_size_in_bits, uint8_t data_type, uint8_t data_dir, float param_min, float param_max) {
@@ -421,10 +425,10 @@ void sserial_do(){
       }else if(lbp.ct == CT_RPC){//RPC TODO: check for ct should not required for rpc
           timeout = 0;
           if(lbp.byte == UnitNumberRPC && available >= 2){//unit number, cmd+crc = 2b
-              txbuf[0] = 0x00;
-              txbuf[1] = 0x00;
-              txbuf[2] = 0x00;
-              txbuf[3] = 0x00;
+              txbuf[0] = unit.byte[0];
+              txbuf[1] = unit.byte[1];
+              txbuf[2] = unit.byte[2];
+              txbuf[3] = unit.byte[3];
               send(4,1);
               rxpos += 2;
           }else if(lbp.byte == DiscoveryRPC && available >= 2){//discovery, cmd+crc = 2b
