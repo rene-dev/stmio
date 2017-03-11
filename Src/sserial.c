@@ -63,7 +63,6 @@ void send(uint8_t len, uint8_t docrc){
    }else{
       DMA1_Channel4->CNDTR = len;
    }
-   //TODO#################################################################################################
    DMA1_Channel4->CCR |= DMA_CCR_EN;
 }
 
@@ -206,7 +205,7 @@ void sserial_init(){
   //ADD_PROCESS_VAR(("enable", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));             metadata(&(pd_table.enable), last_pd);
   //ADD_PROCESS_VAR(("pos_cmd", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_OUTPUT, -3.2, 3.2));    metadata(&(pd_table.pos_cmd), last_pd);
   
-  ADD_PROCESS_VAR(("in", "none", 20, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, -100, 100));    metadata(&(pd_table.input_pins), last_pd);
+  ADD_PROCESS_VAR(("in", "none", 20, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
   //ADD_PROCESS_VAR(("fault", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));               metadata(&(pd_table.fault), last_pd);
   //ADD_PROCESS_VAR(("pos_fb", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_INPUT, -3.2, 3.2));      metadata(&(pd_table.pos_fb), last_pd);
   //globals and modes are not working. https://github.com/LinuxCNC/linuxcnc/blob/2957cc5ad0a463c39fb35c10a0c14909c09a5fb7/src/hal/drivers/mesa-hostmot2/sserial.c#L1516
