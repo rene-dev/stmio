@@ -29,7 +29,9 @@
 #define CT_RPC    2 // 10b
 #define CT_LOCAL  3 // 11b
 
+#pragma pack(1)
 typedef union{
+    #pragma pack(1)
     struct {
         uint8_t ds:2;//DataSize: Specifies data size, 00b = 1 bytes, 01b = 2 bytes, 10 b= 4 bytes, 11b = 8 bytes.
         uint8_t as:1;//AddressSize: 0 to specify current address, 1 to specify 2 byte address.
@@ -39,6 +41,7 @@ typedef union{
         uint8_t ct:2;//CommandType: Must be 01b to specify data read/write command
         // 01:rw   11:local command   10:rpc
     };
+    #pragma pack(1)
     struct {
         uint8_t rpc:6;
         uint8_t dummy:2;
@@ -93,12 +96,13 @@ typedef union{
 #define BITSLEFT(ptr) (8-ptr)
 
 //#define BOOLPIN(pin) (uint8_t)(PIN(pin) > 0.0)
-
+#pragma pack(1)
 typedef union {
   uint8_t byte[4];
   uint32_t unit;
 } unit_no_t;
 
+#pragma pack(1)
 typedef struct{
    uint8_t record_type;//0xa0
    uint8_t data_size;
@@ -110,6 +114,7 @@ typedef struct{
    char names;
 } process_data_descriptor_t;
 
+#pragma pack(1)
 typedef struct{
    uint8_t record_type;//0xb0
    uint8_t index;
@@ -118,6 +123,7 @@ typedef struct{
    char names;
 } mode_descriptor_t;
 
+#pragma pack(1)
 typedef struct{
    uint8_t input;  //process data input bytes 
    uint8_t output; //process data output bytes 
@@ -125,7 +131,9 @@ typedef struct{
    uint16_t gtocp; //pointer to mode data table start
 } discovery_rpc_t;
 
+#pragma pack(1)
 typedef union {
+  #pragma pack(1)
   struct {
     discovery_rpc_t discovery;//6 bytes
     uint16_t foo;//padding, so heap is word aligned
@@ -135,12 +143,14 @@ typedef union {
   uint8_t bytes[MEM_SIZE];
 } memory_t;
 
+#pragma pack(1)
 typedef struct {
   process_data_descriptor_t *ptr;
   float range;
   uint32_t bitmax;
 } pd_metadata_t;
 
+#pragma pack(1)
 typedef struct {
   // pd_metadata_t pos_cmd;
   // pd_metadata_t pos_fb;
