@@ -39,6 +39,9 @@ char name[] = LBPCardName;
 int bufferpos;
 int available;
 
+extern uint8_t led[];
+extern volatile uint8_t matrix_button[];
+
 uint8_t crc_reuest(uint8_t len) {
    uint8_t crc = crc8_init();
    for(int i = rxpos; i < rxpos+len; i++){
@@ -201,11 +204,13 @@ void sserial_init(){
   uint16_t *gtocp = gtoc;
   process_data_descriptor_t *last_pd;
 
-  ADD_PROCESS_VAR(("out", "none", 12, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
+  ADD_PROCESS_VAR(("led", "none", 48, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
+  ADD_PROCESS_VAR(("out", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.out), last_pd);
   //ADD_PROCESS_VAR(("enable", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));             metadata(&(pd_table.enable), last_pd);
   //ADD_PROCESS_VAR(("pos_cmd", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_OUTPUT, -3.2, 3.2));    metadata(&(pd_table.pos_cmd), last_pd);
   
-  ADD_PROCESS_VAR(("in", "none", 20, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
+  ADD_PROCESS_VAR(("btn", "none", 48, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
+  ADD_PROCESS_VAR(("estop", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.estop), last_pd);
   //ADD_PROCESS_VAR(("fault", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));               metadata(&(pd_table.fault), last_pd);
   //ADD_PROCESS_VAR(("pos_fb", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_INPUT, -3.2, 3.2));      metadata(&(pd_table.pos_fb), last_pd);
   //globals and modes are not working. https://github.com/LinuxCNC/linuxcnc/blob/2957cc5ad0a463c39fb35c10a0c14909c09a5fb7/src/hal/drivers/mesa-hostmot2/sserial.c#L1516
@@ -223,8 +228,8 @@ void sserial_init(){
   // now that all the toc entries have been added, write out the tocs to memory and set up the toc pointers
 
   //calculate bytes from bits
-  memory.discovery.input = input_bits >> 3;
-  memory.discovery.output = output_bits >> 3;
+  memory.discovery.input = 7+1;//input_bits >> 3;
+  memory.discovery.output = 6+1;//output_bits >> 3;
 
   memory.discovery.ptocp = MEMPTR(*heap_ptr);
 
@@ -246,7 +251,7 @@ void sserial_init(){
   *heap_ptr++ = 0x00;
   *heap_ptr++ = 0x00;
 }
-
+/*
 void process_data_rpc(uint8_t fault, volatile uint8_t *input, volatile uint8_t *output) {
   uint16_t *ptocp = (uint16_t *)(memory.bytes + memory.discovery.ptocp);
   uint32_t local_rxpos = rxpos;
@@ -340,7 +345,7 @@ void process_data_rpc(uint8_t fault, volatile uint8_t *input, volatile uint8_t *
     }
   }
 }
-
+*/
 
 float scale_out(pd_metadata_t pd, int32_t val) {
   return val * pd.range / (float)pd.bitmax;
@@ -436,48 +441,74 @@ void sserial_do(){
               rxpos += 2;
           }else if(lbp.byte == ProcessDataRPC && available >= memory.discovery.output + 2){//process data, requires cmd+output bytes+crc
              //TODO: maybe packing and unpacking can be moved to RT
-             process_data_rpc(0x00, txbuf, &(rxbuf[rxpos+1])); // todo: send a proper fault byte?
-             uint32_t outpins = MEMU32(pd_table.output_pins.ptr->data_addr);
+             //process_data_rpc(0x00, txbuf, &(rxbuf[rxpos+1])); // todo: send a proper fault byte?
+             //uint32_t outpins = MEMU32(pd_table.output_pins.ptr->data_addr);
+             
+             txbuf[0] = 0x00;//fault byte
+             for(int i = 0;i < 6;i++){
+                txbuf[i+1] = matrix_button[i];
+             }
+             txbuf[7] = HAL_GPIO_ReadPin(GPIOB,  GPIO_PIN_3)<<0;
              send(memory.discovery.input,1);
              
-             HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  (outpins>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  (outpins>>1 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL3_GPIO_Port,  REL3_Pin,  (outpins>>2 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL4_GPIO_Port,  REL4_Pin,  (outpins>>3 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL5_GPIO_Port,  REL5_Pin,  (outpins>>4 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL6_GPIO_Port,  REL6_Pin,  (outpins>>5 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL7_GPIO_Port,  REL7_Pin,  (outpins>>6 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  (outpins>>7 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  (outpins>>8 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, (outpins>>9 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, (outpins>>10 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-             HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, (outpins>>11 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             for(int i = 0;i < 6;i++){
+                led[i] = rxbuf[(rxpos+1+i)%sizeof(rxbuf)];
+             }
+             HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, (rxbuf[(rxpos+7)%sizeof(rxbuf)]>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
-             MEMU8(pd_table.input_pins.ptr->data_addr) =
-                HAL_GPIO_ReadPin(IN1_GPIO_Port,  IN1_Pin)<<0 |
-                HAL_GPIO_ReadPin(IN2_GPIO_Port,  IN2_Pin)<<1 |
-                HAL_GPIO_ReadPin(IN3_GPIO_Port,  IN3_Pin)<<2 |
-                HAL_GPIO_ReadPin(IN4_GPIO_Port,  IN4_Pin)<<3 |
-                HAL_GPIO_ReadPin(IN5_GPIO_Port,  IN5_Pin)<<4 |
-                HAL_GPIO_ReadPin(IN6_GPIO_Port,  IN6_Pin)<<5 |
-                HAL_GPIO_ReadPin(IN7_GPIO_Port,  IN7_Pin)<<6 |
-                HAL_GPIO_ReadPin(IN8_GPIO_Port,  IN8_Pin)<<7;
+             // HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  (outpins>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  (outpins>>1 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL3_GPIO_Port,  REL3_Pin,  (outpins>>2 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL4_GPIO_Port,  REL4_Pin,  (outpins>>3 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL5_GPIO_Port,  REL5_Pin,  (outpins>>4 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL6_GPIO_Port,  REL6_Pin,  (outpins>>5 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL7_GPIO_Port,  REL7_Pin,  (outpins>>6 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  (outpins>>7 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  (outpins>>8 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, (outpins>>9 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, (outpins>>10 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, (outpins>>11 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             //
+             // MEMU8(pd_table.input_pins.ptr->data_addr) =
+             //    HAL_GPIO_ReadPin(IN1_GPIO_Port,  IN1_Pin)<<0 |
+             //    HAL_GPIO_ReadPin(IN2_GPIO_Port,  IN2_Pin)<<1 |
+             //    HAL_GPIO_ReadPin(IN3_GPIO_Port,  IN3_Pin)<<2 |
+             //    HAL_GPIO_ReadPin(IN4_GPIO_Port,  IN4_Pin)<<3 |
+             //    HAL_GPIO_ReadPin(IN5_GPIO_Port,  IN5_Pin)<<4 |
+             //    HAL_GPIO_ReadPin(IN6_GPIO_Port,  IN6_Pin)<<5 |
+             //    HAL_GPIO_ReadPin(IN7_GPIO_Port,  IN7_Pin)<<6 |
+             //    HAL_GPIO_ReadPin(IN8_GPIO_Port,  IN8_Pin)<<7;
+             //
+             // MEMU8(pd_table.input_pins.ptr->data_addr+1) =
+             //    HAL_GPIO_ReadPin(IN9_GPIO_Port,  IN9_Pin )<<0 |
+             //    HAL_GPIO_ReadPin(IN10_GPIO_Port, IN10_Pin)<<1 |
+             //    HAL_GPIO_ReadPin(IN11_GPIO_Port, IN11_Pin)<<2 |
+             //    HAL_GPIO_ReadPin(IN12_GPIO_Port, IN12_Pin)<<3 |
+             //    HAL_GPIO_ReadPin(IN13_GPIO_Port, IN13_Pin)<<4 |
+             //    HAL_GPIO_ReadPin(IN14_GPIO_Port, IN14_Pin)<<5 |
+             //    HAL_GPIO_ReadPin(IN15_GPIO_Port, IN15_Pin)<<6 |
+             //    HAL_GPIO_ReadPin(IN16_GPIO_Port, IN16_Pin)<<7;
+             //
+             // MEMU8(pd_table.input_pins.ptr->data_addr+2) =
+             //    HAL_GPIO_ReadPin(IN17_GPIO_Port,  IN17_Pin)<<0 |
+             //    HAL_GPIO_ReadPin(IN18_GPIO_Port,  IN18_Pin)<<1 |
+             //    HAL_GPIO_ReadPin(IN19_GPIO_Port,  IN19_Pin)<<2 |
+             //    HAL_GPIO_ReadPin(IN20_GPIO_Port,  IN20_Pin)<<3;
              
-             MEMU8(pd_table.input_pins.ptr->data_addr+1) =
-                HAL_GPIO_ReadPin(IN9_GPIO_Port,  IN9_Pin )<<0 |
-                HAL_GPIO_ReadPin(IN10_GPIO_Port, IN10_Pin)<<1 |
-                HAL_GPIO_ReadPin(IN11_GPIO_Port, IN11_Pin)<<2 |
-                HAL_GPIO_ReadPin(IN12_GPIO_Port, IN12_Pin)<<3 |
-                HAL_GPIO_ReadPin(IN13_GPIO_Port, IN13_Pin)<<4 |
-                HAL_GPIO_ReadPin(IN14_GPIO_Port, IN14_Pin)<<5 |
-                HAL_GPIO_ReadPin(IN15_GPIO_Port, IN15_Pin)<<6 |
-                HAL_GPIO_ReadPin(IN16_GPIO_Port, IN16_Pin)<<7;
              
-             MEMU8(pd_table.input_pins.ptr->data_addr+2) =
-                HAL_GPIO_ReadPin(IN17_GPIO_Port,  IN17_Pin)<<0 |
-                HAL_GPIO_ReadPin(IN18_GPIO_Port,  IN18_Pin)<<1 |
-                HAL_GPIO_ReadPin(IN19_GPIO_Port,  IN19_Pin)<<2 |
-                HAL_GPIO_ReadPin(IN20_GPIO_Port,  IN20_Pin)<<3;
+             // led[0] = MEMU8(pd_table.output_pins.ptr->data_addr + 0);
+             // led[1] = MEMU8(pd_table.output_pins.ptr->data_addr + 1);
+             // led[2] = MEMU8(pd_table.output_pins.ptr->data_addr + 2);
+             // led[3] = MEMU8(pd_table.output_pins.ptr->data_addr + 3);
+             // led[4] = MEMU8(pd_table.output_pins.ptr->data_addr + 4);
+             // led[5] = MEMU8(pd_table.output_pins.ptr->data_addr + 5);
+             //
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 0) = matrix_button[0];
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 1) = matrix_button[1];
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 2) = matrix_button[2];
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 3) = matrix_button[3];
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 4) = matrix_button[4];
+             // MEMU8(pd_table.input_pins.ptr->data_addr + 5) = matrix_button[5];
              
              //uint16_t foo = MEMU16(pd_table.pos_cmd.ptr->data_addr);
              //float p = scale_out(pd_table.pos_cmd, *(int16_t*)&foo);
@@ -488,7 +519,7 @@ void sserial_do(){
              //if(!crc_reuest(memory.discovery.output + 1)){
             //    PIN(crc_error)++;
              //}
-             rxpos += memory.discovery.output + 2;
+             rxpos += 6 + 2 + 1;
           }else{
              continue;
           }
@@ -522,25 +553,34 @@ void sserial_do(){
    }
 
    timeout++;
+   //TODO: sending stuff slower than the timeout causes the driver to jump in and out of the timeout...
+   //maybe only allow process data rpc after setup?
    if(timeout > 100.0){//TODO: clamping
-      HAL_GPIO_WritePin(YELLOW_GPIO_Port,YELLOW_Pin,GPIO_PIN_SET);
-      
-      HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL3_GPIO_Port,  REL3_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL4_GPIO_Port,  REL4_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL5_GPIO_Port,  REL5_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL6_GPIO_Port,  REL6_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL7_GPIO_Port,  REL7_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);//LED
+      led[0] = 0x00;
+      led[1] = 0x00;
+      led[2] = 0x00;
+      led[3] = 0x00;
+      led[4] = 0x00;
+      led[5] = 0x00;
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);//output
+      //
+      // HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL3_GPIO_Port,  REL3_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL4_GPIO_Port,  REL4_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL5_GPIO_Port,  REL5_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL6_GPIO_Port,  REL6_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL7_GPIO_Port,  REL7_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL8_GPIO_Port,  REL8_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL9_GPIO_Port,  REL9_Pin,  GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, GPIO_PIN_RESET);
+      // HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, GPIO_PIN_RESET);
       //PIN(connected) = 0;
       rxpos = bufferpos;
    }else{
-      HAL_GPIO_WritePin(YELLOW_GPIO_Port,YELLOW_Pin,GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
       //PIN(connected) = 1;
    }
    rxpos = rxpos % sizeof(rxbuf);

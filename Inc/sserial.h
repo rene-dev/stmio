@@ -19,7 +19,7 @@
 
 #define LBPStatusCMD 0xc1
 
-#define LBPCardName "stio"
+#define LBPCardName "stkb"
 #define LBPCardName0Cmd 0xd0
 #define LBPCardName1Cmd 0xd1
 #define LBPCardName2Cmd 0xd2
@@ -156,6 +156,8 @@ typedef struct {
   // pd_metadata_t pos_fb;
   pd_metadata_t input_pins;
   pd_metadata_t output_pins;
+  pd_metadata_t estop;
+  pd_metadata_t out;
   // pd_metadata_t fault;
   // pd_metadata_t enable;
 } pd_table_t;

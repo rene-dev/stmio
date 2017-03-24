@@ -41,6 +41,8 @@
 
 /* Private define ------------------------------------------------------------*/
 
+/*
+
 #define IN11_Pin GPIO_PIN_13
 #define IN11_GPIO_Port GPIOC
 #define IN12_Pin GPIO_PIN_14
@@ -111,6 +113,8 @@
 #define IN9_GPIO_Port GPIOB
 #define IN10_Pin GPIO_PIN_9
 #define IN10_GPIO_Port GPIOB
+
+*/
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
