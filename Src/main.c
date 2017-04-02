@@ -48,16 +48,6 @@ int main(void)
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   HAL_TIM_Base_Init(&htim1);
-
-  // TIM_ClockConfigTypeDef sClockSourceConfig;
-  // sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  // HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig);
-  //
-  // TIM_MasterConfigTypeDef sMasterConfig;
-  // sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  // sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  // HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig);
-
   HAL_NVIC_SetPriority(TIM1_UP_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
   HAL_TIM_Base_Start_IT(&htim1);
