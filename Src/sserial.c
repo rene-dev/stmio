@@ -206,6 +206,10 @@ void sserial_init(){
   //ADD_PROCESS_VAR(("pos_cmd", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_OUTPUT, -3.2, 3.2));    metadata(&(pd_table.pos_cmd), last_pd);
   
   ADD_PROCESS_VAR(("in", "none", 20, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
+  
+  ADD_PROCESS_VAR(("speed1", "none", 8, DATA_TYPE_UNSIGNED, DATA_DIRECTION_OUTPUT, 0, 100));    metadata(&(pd_table.pwm1), last_pd);
+  ADD_PROCESS_VAR(("speed2", "none", 8, DATA_TYPE_UNSIGNED, DATA_DIRECTION_OUTPUT, 0, 100));    metadata(&(pd_table.pwm2), last_pd);
+  
   //ADD_PROCESS_VAR(("fault", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));               metadata(&(pd_table.fault), last_pd);
   //ADD_PROCESS_VAR(("pos_fb", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_INPUT, -3.2, 3.2));      metadata(&(pd_table.pos_fb), last_pd);
   //globals and modes are not working. https://github.com/LinuxCNC/linuxcnc/blob/2957cc5ad0a463c39fb35c10a0c14909c09a5fb7/src/hal/drivers/mesa-hostmot2/sserial.c#L1516
@@ -453,6 +457,11 @@ void sserial_do(){
              HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, (outpins>>10 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, (outpins>>11 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
+             uint8_t pwm1 = MEMU8(pd_table.pwm1.ptr->data_addr);
+             uint8_t pwm2 = MEMU8(pd_table.pwm2.ptr->data_addr);
+             TIM3->CCR2 = pwm1 * 14;
+             TIM3->CCR3 = pwm2 * 14;
+             
              MEMU8(pd_table.input_pins.ptr->data_addr) =
                 HAL_GPIO_ReadPin(IN1_GPIO_Port,  IN1_Pin)<<0 |
                 HAL_GPIO_ReadPin(IN2_GPIO_Port,  IN2_Pin)<<1 |
@@ -537,6 +546,8 @@ void sserial_do(){
       HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, GPIO_PIN_RESET);
+      TIM3->CCR2 = 0;
+      TIM3->CCR3 = 0;
       //PIN(connected) = 0;
       rxpos = bufferpos;
    }else{

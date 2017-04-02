@@ -5,6 +5,7 @@
 
 SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
 
 void SystemClock_Config(void);
 void Error_Handler(void);
@@ -48,6 +49,44 @@ int main(void)
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   HAL_TIM_Base_Init(&htim1);
+  
+  //pwm
+  //tim3 ch2
+  //tim3 ch3
+  
+  GPIO_InitTypeDef GPIO_InitStruct;
+  /**TIM3 GPIO Configuration    
+  PC7     ------> TIM3_CH2
+  PC8     ------> TIM3_CH3 
+  */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  __HAL_AFIO_REMAP_TIM3_ENABLE();
+  
+  __HAL_RCC_TIM3_CLK_ENABLE();
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 3570-1; // 36e6 / 3600 = 10kHz
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.RepetitionCounter = 0;
+  HAL_TIM_Base_Init(&htim3);
+  HAL_TIM_PWM_Init(&htim3);
+    
+  TIM_OC_InitTypeDef sConfigOC;
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2);
+  HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3);
+  
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_Base_Start(&htim3);
+  
   HAL_NVIC_SetPriority(TIM1_UP_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
   HAL_TIM_Base_Start_IT(&htim1);

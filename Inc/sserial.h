@@ -156,6 +156,8 @@ typedef struct {
   // pd_metadata_t pos_fb;
   pd_metadata_t input_pins;
   pd_metadata_t output_pins;
+  pd_metadata_t pwm1;
+  pd_metadata_t pwm2;
   // pd_metadata_t fault;
   // pd_metadata_t enable;
 } pd_table_t;
