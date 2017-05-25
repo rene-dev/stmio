@@ -6,6 +6,7 @@
 SPI_HandleTypeDef hspi2;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
+uint8_t tx[100];
 
 void SystemClock_Config(void);
 void Error_Handler(void);
@@ -18,6 +19,27 @@ void TIM1_UP_IRQHandler(){
   // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
   sserial_do();
   // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);
+}
+
+void delay(uint32_t t){
+   volatile uint32_t foo = t;
+   while(foo > 0){
+      foo--;
+   };
+}
+
+void softspi(uint8_t* data, uint8_t len){
+   for(int i = 0; i < len * 8; i++){
+      HAL_GPIO_WritePin(GPIOA,GPIO_PIN_8,(1 & data[(i/8)] >> (7-i%8))?GPIO_PIN_SET:GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
+      //HAL_Delay(1);
+      delay(200);
+      HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_SET);
+      delay(200);
+      //HAL_Delay(1);
+   }
+   HAL_GPIO_WritePin(GPIOA,GPIO_PIN_8,GPIO_PIN_RESET);
+   HAL_GPIO_WritePin(GPIOC,GPIO_PIN_8,GPIO_PIN_RESET);
 }
 
 int main(void)
@@ -57,9 +79,8 @@ int main(void)
   GPIO_InitTypeDef GPIO_InitStruct;
   /**TIM3 GPIO Configuration    
   PC7     ------> TIM3_CH2
-  PC8     ------> TIM3_CH3 
   */
-  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -81,18 +102,74 @@ int main(void)
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2);
-  HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3);
   
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_Base_Start(&htim3);
   
   HAL_NVIC_SetPriority(TIM1_UP_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
   HAL_TIM_Base_Start_IT(&htim1);
 
+
+  //sp_en(PC9), sp_dir(PB12)
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  tx[0]  = 0x40;//opcode 0x40,0x42,0x44
+  tx[1]  = 0x00;//addr
+  tx[2]  = 0x00;//dira
+  tx[3]  = 0x00;//dirb
+  tx[4]  = 0x00;//pola
+  tx[5]  = 0x00;//polb
+  tx[6]  = 0x00;//gpintena
+  tx[7]  = 0x00;//gpintenb
+  tx[8]  = 0x00;//defvala
+  tx[9]  = 0x00;//defvalb
+  tx[10] = 0x00;//intcona
+  tx[11] = 0x00;//intconb
+  tx[12] = 0x08;//iocon
+  tx[13] = 0x08;//iocon
+  tx[14] = 0x00;//gppua
+  tx[15] = 0x00;//gppub
+  tx[16] = 0x00;//intfa
+  tx[17] = 0x00;//infbb
+  tx[18] = 0x00;//intcapa
+  tx[19] = 0x00;//intcapb
+  tx[20] = 0x00;//gpioa
+  tx[21] = 0x00;//gpiob
+
+  //CS(PC6), SCK(PC8), MOSI(PA8)
+  GPIO_InitStruct.Pin = GPIO_PIN_6 | GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /* Infinite loop */
-  while (1);
+  while (1){
+     tx[20] = extio[0];//gpioa
+     tx[21] = extio[1];//gpiob
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+     //HAL_Delay(1);
+     delay(100);
+     softspi(tx, 22);
+     //HAL_Delay(1);
+     delay(200);
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+     //HAL_Delay(1);
+     delay(200);
+  }
 
 }
 

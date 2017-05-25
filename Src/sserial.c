@@ -201,14 +201,16 @@ void sserial_init(){
   uint16_t *gtocp = gtoc;
   process_data_descriptor_t *last_pd;
 
-  ADD_PROCESS_VAR(("out", "none", 12, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
-  //ADD_PROCESS_VAR(("enable", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));             metadata(&(pd_table.enable), last_pd);
-  //ADD_PROCESS_VAR(("pos_cmd", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_OUTPUT, -3.2, 3.2));    metadata(&(pd_table.pos_cmd), last_pd);
+  ADD_PROCESS_VAR(("out", "none", 28, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
+  ADD_PROCESS_VAR(("sp_ena", "none", 1, DATA_TYPE_BOOLEAN, DATA_DIRECTION_OUTPUT, 0, 1));         metadata(&(pd_table.sp_ena), last_pd);
+  ADD_PROCESS_VAR(("sp_dir", "none", 1, DATA_TYPE_BOOLEAN, DATA_DIRECTION_OUTPUT, 0, 1));         metadata(&(pd_table.sp_dir), last_pd);
+  
   
   ADD_PROCESS_VAR(("in", "none", 20, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
+  ADD_PROCESS_VAR(("sp_err", "none", 1, DATA_TYPE_BOOLEAN, DATA_DIRECTION_INPUT, 0, 1)); metadata(&(pd_table.sp_err), last_pd);
+  ADD_PROCESS_VAR(("sp_stop", "none", 1, DATA_TYPE_BOOLEAN, DATA_DIRECTION_INPUT, 0, 1)); metadata(&(pd_table.sp_stop), last_pd);  
   
-  ADD_PROCESS_VAR(("speed1", "none", 8, DATA_TYPE_UNSIGNED, DATA_DIRECTION_OUTPUT, 0, 100));    metadata(&(pd_table.pwm1), last_pd);
-  ADD_PROCESS_VAR(("speed2", "none", 8, DATA_TYPE_UNSIGNED, DATA_DIRECTION_OUTPUT, 0, 100));    metadata(&(pd_table.pwm2), last_pd);
+  ADD_PROCESS_VAR(("sp_rpm", "none", 8, DATA_TYPE_UNSIGNED, DATA_DIRECTION_OUTPUT, 0, 100));    metadata(&(pd_table.sp_rpm), last_pd);
   
   //ADD_PROCESS_VAR(("fault", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));               metadata(&(pd_table.fault), last_pd);
   //ADD_PROCESS_VAR(("pos_fb", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_INPUT, -3.2, 3.2));      metadata(&(pd_table.pos_fb), last_pd);
@@ -442,6 +444,8 @@ void sserial_do(){
              //TODO: maybe packing and unpacking can be moved to RT
              process_data_rpc(0x00, txbuf, &(rxbuf[rxpos+1])); // todo: send a proper fault byte?
              uint32_t outpins = MEMU32(pd_table.output_pins.ptr->data_addr);
+             uint32_t sp_en = MEMU32(pd_table.sp_ena.ptr->data_addr);
+             uint32_t sp_dir = MEMU32(pd_table.sp_dir.ptr->data_addr);
              send(memory.discovery.input,1);
              
              HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  (outpins>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -457,10 +461,29 @@ void sserial_do(){
              HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, (outpins>>10 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, (outpins>>11 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
-             uint8_t pwm1 = MEMU8(pd_table.pwm1.ptr->data_addr);
-             uint8_t pwm2 = MEMU8(pd_table.pwm2.ptr->data_addr);
+             extio[0] = (outpins>>12 & 1) << 0 |
+                        (outpins>>13 & 1) << 1 |
+                        (outpins>>14 & 1) << 2 |
+                        (outpins>>15 & 1) << 3 |
+                        (outpins>>16 & 1) << 4 |
+                        (outpins>>17 & 1) << 5 |
+                        (outpins>>18 & 1) << 6 |
+                        (outpins>>19 & 1) << 7;
+             
+             extio[1] = (outpins>>20 & 1) << 0 |
+                        (outpins>>21 & 1) << 1 |
+                        (outpins>>22 & 1) << 2 |
+                        (outpins>>23 & 1) << 3 |
+                        (outpins>>24 & 1) << 4 |
+                        (outpins>>25 & 1) << 5 |
+                        (outpins>>26 & 1) << 6 |
+                        (outpins>>27 & 1) << 7;
+             
+             HAL_GPIO_WritePin(GPIOC,  GPIO_PIN_9,  (sp_en>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             HAL_GPIO_WritePin(GPIOB,  GPIO_PIN_12,  (sp_dir>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             
+             uint8_t pwm1 = MEMU8(pd_table.sp_rpm.ptr->data_addr);
              TIM3->CCR2 = pwm1 * 14;
-             TIM3->CCR3 = pwm2 * 14;
              
              MEMU8(pd_table.input_pins.ptr->data_addr) =
                 HAL_GPIO_ReadPin(IN1_GPIO_Port,  IN1_Pin)<<0 |
@@ -546,8 +569,14 @@ void sserial_do(){
       HAL_GPIO_WritePin(REL10_GPIO_Port, REL10_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(REL11_GPIO_Port, REL11_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(REL12_GPIO_Port, REL12_Pin, GPIO_PIN_RESET);
+      
+      //sp_en(PC9), sp_dir(PB12)
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+      
       TIM3->CCR2 = 0;
-      TIM3->CCR3 = 0;
+      extio[0] = 0x00;
+      extio[1] = 0x00;
       //PIN(connected) = 0;
       rxpos = bufferpos;
    }else{

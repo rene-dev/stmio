@@ -63,6 +63,7 @@ typedef union{
 #define DATA_TYPE_NONVOL_UNSIGNED 0x04
 #define DATA_TYPE_NONVOL_SIGNED 0x05
 #define DATA_TYPE_NONVOL_STREAM 0x06
+#define DATA_TYPE_BOOLEAN 			0x07
 #define DATA_TYPE_NONVOL_BOOLEAN 0x07
 
 #define DATA_DIRECTION_INPUT 0x00
@@ -150,16 +151,17 @@ typedef struct {
   uint32_t bitmax;
 } pd_metadata_t;
 
+volatile uint8_t extio[2];
+
 #pragma pack(1)
 typedef struct {
-  // pd_metadata_t pos_cmd;
-  // pd_metadata_t pos_fb;
   pd_metadata_t input_pins;
   pd_metadata_t output_pins;
-  pd_metadata_t pwm1;
-  pd_metadata_t pwm2;
-  // pd_metadata_t fault;
-  // pd_metadata_t enable;
+  pd_metadata_t sp_ena;
+  pd_metadata_t sp_dir;
+  pd_metadata_t sp_err;
+  pd_metadata_t sp_stop;
+  pd_metadata_t sp_rpm;
 } pd_table_t;
 
 void sserial_init();
