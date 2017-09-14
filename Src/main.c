@@ -205,14 +205,14 @@ int main(void)
     // HAL_Delay(1);
     
      //out config+write
-     tx[0]  = 0x40;
+     tx[0]  = 0x40;//opcode
      tx[20] = out[0];//gpioa
      tx[21] = out[1];//gpiob
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
      HAL_SPI_Transmit(&hspi1, tx, 22, 1);
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
      
-     tx[0]  = 0x42;
+     tx[0]  = 0x42;//opcode
      tx[20] = out[2];//gpioa
      tx[21] = out[3];//gpiob
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
@@ -220,29 +220,29 @@ int main(void)
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
      
      //in config
-     rx[0]  = 0x40;
-     rx[1]  = 0x00;
+     rx[0]  = 0x40;//opcode
+     rx[1]  = 0x00;//addr
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_Transmit(&hspi3, rx, 16, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
      
-     rx[0]  = 0x42;
-     rx[1]  = 0x00;
+     rx[0]  = 0x42;//opcode
+     rx[1]  = 0x00;//addr
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_Transmit(&hspi3, rx, 16, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
      
      //read
-     rx[0]  = 0x41;
-     rx[1]  = 0x12;
+     rx[0]  = 0x41;//opcode
+     rx[1]  = 0x12;//addr
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
      in[0] = inbuf[2];
      in[1] = inbuf[3];
      
-     rx[0]  = 0x43;
-     rx[1]  = 0x12;
+     rx[0]  = 0x43;//opcode
+     rx[1]  = 0x12;//addr
      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);

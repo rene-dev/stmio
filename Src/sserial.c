@@ -229,8 +229,8 @@ void sserial_init(){
   // now that all the toc entries have been added, write out the tocs to memory and set up the toc pointers
 
   //calculate bytes from bits
-  memory.discovery.input = 7+1;//input_bits >> 3;
-  memory.discovery.output = 6+1;//output_bits >> 3;
+  memory.discovery.input = 5;//input_bits >> 3;
+  memory.discovery.output = 4;//output_bits >> 3;
 
   memory.discovery.ptocp = MEMPTR(*heap_ptr);
 
