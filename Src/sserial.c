@@ -39,7 +39,8 @@ char name[] = LBPCardName;
 int bufferpos;
 int available;
 
-extern uint8_t led[];
+extern uint8_t out[];
+extern uint8_t in[];
 extern volatile uint8_t matrix_button[];
 
 uint8_t crc_reuest(uint8_t len) {
@@ -204,13 +205,13 @@ void sserial_init(){
   uint16_t *gtocp = gtoc;
   process_data_descriptor_t *last_pd;
 
-  ADD_PROCESS_VAR(("led", "none", 48, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
-  ADD_PROCESS_VAR(("out", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.out), last_pd);
+  // ADD_PROCESS_VAR(("led", "none", 48, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.output_pins), last_pd);
+  ADD_PROCESS_VAR(("out", "none", 32, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));       metadata(&(pd_table.out), last_pd);
   //ADD_PROCESS_VAR(("enable", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_OUTPUT, 0, 1));             metadata(&(pd_table.enable), last_pd);
   //ADD_PROCESS_VAR(("pos_cmd", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_OUTPUT, -3.2, 3.2));    metadata(&(pd_table.pos_cmd), last_pd);
   
-  ADD_PROCESS_VAR(("btn", "none", 48, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
-  ADD_PROCESS_VAR(("estop", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.estop), last_pd);
+  ADD_PROCESS_VAR(("in", "none", 32, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.input_pins), last_pd);
+  // ADD_PROCESS_VAR(("estop", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));    metadata(&(pd_table.estop), last_pd);
   //ADD_PROCESS_VAR(("fault", "none", 1, DATA_TYPE_BITS, DATA_DIRECTION_INPUT, 0, 1));               metadata(&(pd_table.fault), last_pd);
   //ADD_PROCESS_VAR(("pos_fb", "rad", 16, DATA_TYPE_SIGNED, DATA_DIRECTION_INPUT, -3.2, 3.2));      metadata(&(pd_table.pos_fb), last_pd);
   //globals and modes are not working. https://github.com/LinuxCNC/linuxcnc/blob/2957cc5ad0a463c39fb35c10a0c14909c09a5fb7/src/hal/drivers/mesa-hostmot2/sserial.c#L1516
@@ -445,16 +446,17 @@ void sserial_do(){
              //uint32_t outpins = MEMU32(pd_table.output_pins.ptr->data_addr);
              
              txbuf[0] = 0x00;//fault byte
-             for(int i = 0;i < 6;i++){
-                txbuf[i+1] = matrix_button[i];
+             for(int i = 0;i < 4;i++){
+                txbuf[i+1] = in[i];
              }
-             txbuf[7] = HAL_GPIO_ReadPin(GPIOB,  GPIO_PIN_3)<<0;
+             // txbuf[7] = HAL_GPIO_ReadPin(GPIOB,  GPIO_PIN_3)<<0;
              send(memory.discovery.input,1);
              
-             for(int i = 0;i < 6;i++){
-                led[i] = rxbuf[(rxpos+1+i)%sizeof(rxbuf)];
+             //set outputs
+             for(int i = 0;i < 4;i++){
+                out[i] = rxbuf[(rxpos+1+i)%sizeof(rxbuf)];
              }
-             HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, (rxbuf[(rxpos+7)%sizeof(rxbuf)]>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+             // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, (rxbuf[(rxpos+7)%sizeof(rxbuf)]>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
              // HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  (outpins>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              // HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  (outpins>>1 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -556,14 +558,12 @@ void sserial_do(){
    //TODO: sending stuff slower than the timeout causes the driver to jump in and out of the timeout...
    //maybe only allow process data rpc after setup?
    if(timeout > 100.0){//TODO: clamping
-      HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);//LED
-      led[0] = 0x00;
-      led[1] = 0x00;
-      led[2] = 0x00;
-      led[3] = 0x00;
-      led[4] = 0x00;
-      led[5] = 0x00;
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);//output
+      // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);//LED
+      out[0] = 0x00;
+      out[1] = 0x00;
+      out[2] = 0x00;
+      out[3] = 0x00;
+      // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);//output
       //
       // HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  GPIO_PIN_RESET);
       // HAL_GPIO_WritePin(REL2_GPIO_Port,  REL2_Pin,  GPIO_PIN_RESET);
@@ -580,7 +580,7 @@ void sserial_do(){
       //PIN(connected) = 0;
       rxpos = bufferpos;
    }else{
-      HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+      //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
       //PIN(connected) = 1;
    }
    rxpos = rxpos % sizeof(rxbuf);

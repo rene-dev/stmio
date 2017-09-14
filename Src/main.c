@@ -4,20 +4,27 @@
 #include "sserial.h"
 #include "keymatrix.h"
 
+SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+SPI_HandleTypeDef hspi3;
+
 TIM_HandleTypeDef htim1;
 uint8_t tx[100];
-volatile uint8_t led[6];
+uint8_t rx[100];
+uint8_t inbuf[10];
+uint8_t in[4];
+volatile uint8_t out[4];
 
 void SystemClock_Config(void);
 void Error_Handler(void);
-void spi_init(void);
+void spi2_init(void);
+void spi13_init(void);
 
 //20kHz
 void TIM1_UP_IRQHandler(){
   __HAL_TIM_CLEAR_IT(&htim1, TIM_IT_UPDATE);
   HAL_GPIO_WritePin(GPIOD,GPIO_PIN_2,GPIO_PIN_SET);
-  matrix_update();
+  //matrix_update();
 
   // led[0] = ~matrix_button[0];
   // led[1] = ~matrix_button[1];
@@ -51,13 +58,13 @@ int main(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
-  spi_init();
+  spi13_init();
 
-  matrix_init();
+  //matrix_init();
   sserial_init();
 
   GPIO_InitTypeDef GPIO_InitStruct;
-
+  /*
   //out
   GPIO_InitStruct.Pin = GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -90,7 +97,7 @@ int main(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
-
+*/
   __HAL_RCC_TIM1_CLK_ENABLE();
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
@@ -132,6 +139,29 @@ int main(void)
   tx[20] = 0xff;//gpioa
   tx[21] = 0xff;//gpiob
 
+  rx[0]  = 0x40;//opcode 0x40,0x42,0x44
+  rx[1]  = 0x00;//addr
+  rx[2]  = 0xff;//dira
+  rx[3]  = 0xff;//dirb
+  rx[4]  = 0x00;//pola
+  rx[5]  = 0x00;//polb
+  rx[6]  = 0x00;//gpintena
+  rx[7]  = 0x00;//gpintenb
+  rx[8]  = 0x00;//defvala
+  rx[9]  = 0x00;//defvalb
+  rx[10] = 0x00;//intcona
+  rx[11] = 0x00;//intconb
+  rx[12] = 0x08;//iocon
+  rx[13] = 0x08;//iocon
+  rx[14] = 0xff;//gppua
+  rx[15] = 0xff;//gppub
+  rx[16] = 0x00;//intfa
+  rx[17] = 0x00;//infbb
+  rx[18] = 0x00;//intcapa
+  rx[19] = 0x00;//intcapb
+  rx[20] = 0xff;//gpioa
+  rx[21] = 0xff;//gpiob
+
   HAL_NVIC_SetPriority(TIM1_UP_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_IRQn);
   HAL_TIM_Base_Start_IT(&htim1);
@@ -149,31 +179,98 @@ int main(void)
     // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
     // HAL_SPI_Transmit(&hspi2, tx, 22, 1000);
     // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-    tx[0]  = 0x40;
-    tx[20] = ~led[4];//gpioa
-    tx[21] = ~led[5];//gpiob
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, tx, 22, 1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-    HAL_Delay(1);
-  
-    tx[0]  = 0x42;
-    tx[20] = ~led[2];//gpioa
-    tx[21] = ~led[3];//gpiob
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, tx, 22, 1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-    HAL_Delay(1);
-  
-    tx[0]  = 0x44;
-    tx[20] = ~led[0];//gpioa
-    tx[21] = ~led[1];//gpiob
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi2, tx, 22, 1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
-    HAL_Delay(1);
+     
+    // tx[0]  = 0x40;
+    // tx[20] = ~led[4];//gpioa
+    // tx[21] = ~led[5];//gpiob
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    // HAL_SPI_Transmit(&hspi2, tx, 22, 1);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    // HAL_Delay(1);
+    //
+    // tx[0]  = 0x42;
+    // tx[20] = ~led[2];//gpioa
+    // tx[21] = ~led[3];//gpiob
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    // HAL_SPI_Transmit(&hspi2, tx, 22, 1);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    // HAL_Delay(1);
+    //
+    // tx[0]  = 0x44;
+    // tx[20] = ~led[0];//gpioa
+    // tx[21] = ~led[1];//gpiob
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    // HAL_SPI_Transmit(&hspi2, tx, 22, 1);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    // HAL_Delay(1);
+    
+     //out config+write
+     tx[0]  = 0x40;
+     tx[20] = out[0];//gpioa
+     tx[21] = out[1];//gpiob
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+     HAL_SPI_Transmit(&hspi1, tx, 22, 1);
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+     
+     tx[0]  = 0x42;
+     tx[20] = out[2];//gpioa
+     tx[21] = out[3];//gpiob
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+     HAL_SPI_Transmit(&hspi1, tx, 22, 1);
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+     
+     //in config
+     rx[0]  = 0x40;
+     rx[1]  = 0x00;
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+     HAL_SPI_Transmit(&hspi3, rx, 16, 1);
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+     
+     rx[0]  = 0x42;
+     rx[1]  = 0x00;
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+     HAL_SPI_Transmit(&hspi3, rx, 16, 1);
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+     
+     //read
+     rx[0]  = 0x41;
+     rx[1]  = 0x12;
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+     HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+     in[0] = inbuf[2];
+     in[1] = inbuf[3];
+     
+     rx[0]  = 0x43;
+     rx[1]  = 0x12;
+     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+     HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
+     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+     in[2] = inbuf[2];
+     in[3] = inbuf[3];
+     HAL_Delay(1);
+
+     // tx[0]  = 0x40;
+     // tx[20] = 0xff;//gpioa
+     // tx[21] = 0xff;//gpiob
+     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+     // HAL_SPI_Transmit(&hspi1, tx, 22, 1);
+     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+     //
+     // tx[0]  = 0x42;
+     // tx[20] = 0xff;//gpioa
+     // tx[21] = 0xff;//gpiob
+     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+     // HAL_SPI_Transmit(&hspi1, tx, 22, 1);
+     // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+     //
+     // HAL_Delay(100);
+    
     }
 
+
+     
+     
 }
 
 /** System Clock Configuration
@@ -230,7 +327,90 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-void spi_init(void)
+void spi13_init(void){
+   GPIO_InitTypeDef GPIO_InitStruct;
+   /* Peripheral clock enable */
+   __HAL_RCC_SPI1_CLK_ENABLE();
+  
+   /**SPI1 GPIO Configuration
+   PA4     ------> SPI1_CS
+   PA5     ------> SPI1_SCK
+   PA6     ------> SPI1_MISO
+   PA7     ------> SPI1_MOSI 
+   */
+   
+   GPIO_InitStruct.Pin = GPIO_PIN_4;
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+   
+   GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_7;
+   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+   GPIO_InitStruct.Pin = GPIO_PIN_6;
+   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+   GPIO_InitStruct.Pull = GPIO_NOPULL;
+   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+   /* Peripheral clock enable */
+   __HAL_RCC_SPI3_CLK_ENABLE();
+  
+   /**SPI3 GPIO Configuration
+   PC9      ------> SPI3_CS
+   PC10     ------> SPI3_SCK
+   PC11     ------> SPI3_MISO
+   PC12     ------> SPI3_MOSI 
+   */
+   
+   GPIO_InitStruct.Pin = GPIO_PIN_9;
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+   
+   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12;
+   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+   GPIO_InitStruct.Pin = GPIO_PIN_11;
+   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+   GPIO_InitStruct.Pull = GPIO_NOPULL;
+   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+   __HAL_AFIO_REMAP_SPI3_ENABLE();
+   
+   hspi1.Instance = SPI1;
+   hspi1.Init.Mode = SPI_MODE_MASTER;
+   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+   hspi1.Init.NSS = SPI_NSS_SOFT;
+   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+   hspi1.Init.CRCPolynomial = 10;
+   HAL_SPI_Init(&hspi1);
+   
+   hspi3.Instance = SPI3;
+   hspi3.Init.Mode = SPI_MODE_MASTER;
+   hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+   hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+   hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+   hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+   hspi3.Init.NSS = SPI_NSS_SOFT;
+   hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+   hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+   hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+   hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+   hspi3.Init.CRCPolynomial = 10;
+   HAL_SPI_Init(&hspi3);
+}
+
+void spi2_init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct;
   /* Peripheral clock enable */

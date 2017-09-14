@@ -19,7 +19,7 @@
 
 #define LBPStatusCMD 0xc1
 
-#define LBPCardName "stkb"
+#define LBPCardName "stio"
 #define LBPCardName0Cmd 0xd0
 #define LBPCardName1Cmd 0xd1
 #define LBPCardName2Cmd 0xd2
