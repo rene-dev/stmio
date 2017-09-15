@@ -521,7 +521,7 @@ void sserial_do(){
              //if(!crc_reuest(memory.discovery.output + 1)){
             //    PIN(crc_error)++;
              //}
-             rxpos += 6 + 2 + 1;
+             rxpos += memory.discovery.output + 2;
           }else{
              continue;
           }
