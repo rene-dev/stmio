@@ -456,6 +456,7 @@ void sserial_do(){
              for(int i = 0;i < 4;i++){
                 out[i] = rxbuf[(rxpos+1+i)%sizeof(rxbuf)];
              }
+             HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);//LED
              // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, (rxbuf[(rxpos+7)%sizeof(rxbuf)]>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
              
              // HAL_GPIO_WritePin(REL1_GPIO_Port,  REL1_Pin,  (outpins>>0 & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -559,6 +560,7 @@ void sserial_do(){
    //maybe only allow process data rpc after setup?
    if(timeout > 100.0){//TODO: clamping
       // HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);//LED
+      HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_SET);//LED
       out[0] = 0x00;
       out[1] = 0x00;
       out[2] = 0x00;
