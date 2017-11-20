@@ -237,16 +237,16 @@ int main(void)
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-     in[0] = inbuf[2];
-     in[1] = inbuf[3];
+     in[0] = ~inbuf[2];
+     in[1] = ~inbuf[3];
      
      rx[0]  = 0x43;//opcode
      rx[1]  = 0x12;//addr
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
      HAL_SPI_TransmitReceive(&hspi3, rx, inbuf, 4, 1);
      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-     in[2] = inbuf[2];
-     in[3] = inbuf[3];
+     in[2] = ~inbuf[2];
+     in[3] = ~inbuf[3];
      HAL_Delay(1);
 
      // tx[0]  = 0x40;
